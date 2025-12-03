@@ -1,0 +1,78 @@
+# ===========================================
+# IntakeAI Docker Compose Configuration
+# Run with: docker-compose up --build
+# ===========================================
+
+version: "3.8"
+
+services:
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: intakeai-server
+    restart: unless-stopped
+
+    # Environment variables
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - DATABASE_URL=${DATABASE_URL}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost}
+
+    # Expose port 3001 to other containers
+    expose:
+      - "3001"
+
+    ports:
+      - "3001:3001"
+
+    # Health check
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:3001/api/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+    # Connect to the app network
+    networks:
+      - intakeai-network
+
+  # -----------------------------------------
+  # Frontend Client (React + Nginx)
+  # -----------------------------------------
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=/api
+    container_name: intakeai-client
+    restart: unless-stopped
+
+    # Map port 80 to host port 80 (or 3000 for local dev)
+    ports:
+      - "80:80"
+
+    # Wait for server to be healthy before starting
+    depends_on:
+      server:
+        condition: service_healthy
+
+    # Connect to the app network
+    networks:
+      - intakeai-network
+
+networks:
+  intakeai-network:
+    driver: bridge

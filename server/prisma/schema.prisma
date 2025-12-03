@@ -1,0 +1,164 @@
+// Prisma Schema for IntakeAI
+// Docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Status options for an appointment
+enum AppointmentStatus {
+  SCHEDULED  // Appointment is booked
+  COMPLETED  // Appointment already happened and is done
+  CANCELLED
+  NO_SHOW
+}
+
+// Status options for a patient intake form
+enum IntakeStatus {
+  PENDING      // Intake link sent but patient hasn't started
+  IN_PROGRESS
+  COMPLETED
+  REVIEWED     // Doctor has reviewed the intake
+  FLAGGED      // There are red flags that need attention
+}
+
+// ============================================
+// MODELS - These are the database tables
+// ============================================
+
+// User model - stores doctor/practitioner accounts
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique               // Email must be unique (used for login) - to be implemented in the future
+  password     String                         // Hashed password (never store plain text!) - to be implemented in the future
+  firstName    String                         // Doctor's first name
+  lastName     String                         // Doctor's last name
+  title        String   @default("ND")        // Professional title (ND = Naturopathic Doctor)
+  practiceName String                         // Name of their clinic/practice
+  createdAt    DateTime @default(now())       // When the account was created
+  updatedAt    DateTime @updatedAt            // Auto-updates when record changes
+
+  // Relationships - a user (doctor) can have many patients and refresh tokens
+  patients      Patient[]
+  refreshTokens RefreshToken[]
+}
+
+// Patient model - stores patient information
+model Patient {
+  id          String    @id @default(uuid())  // Unique ID for each patient
+  firstName   String                          // Patient's first name
+  lastName    String                          // Patient's last name
+  email       String?                         // Email is optional
+  phone       String?                         // Phone is optional
+  dateOfBirth DateTime?                       // DOB is optional (for privacy)
+  createdAt   DateTime  @default(now())       // When patient was added
+  updatedAt   DateTime  @updatedAt            // Auto-updates when record changes
+
+  // Foreign key - which doctor does this patient belong to
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  // Relationships - a patient can have many appointments, intakes, and intake links
+  appointments Appointment[]
+  intakes      Intake[]
+  intakeLinks  IntakeLink[]
+}
+
+// Appointment model - stores scheduled visits
+model Appointment {
+  id          String            @id @default(uuid())  // Unique ID
+  scheduledAt DateTime                                // When the appointment is scheduled
+  status      AppointmentStatus @default(SCHEDULED)
+  createdAt   DateTime          @default(now())       // When this was created
+  updatedAt   DateTime          @updatedAt            // Auto-updates when record changes
+
+  // Foreign key - which patient is this appointment for
+  patientId String
+  patient   Patient @relation(fields: [patientId], references: [id])
+}
+
+// Intake model - stores the patient intake form submissions
+model Intake {
+  id          String       @id @default(uuid())    // Unique ID
+  status      IntakeStatus @default(PENDING)       // Current status of the intake
+  responses   Json?                                // Stores all the form answers as JSON
+  completedAt DateTime?                            // When patient finished the form (null if not done)
+  createdAt   DateTime     @default(now())         // When intake was created
+  updatedAt   DateTime     @updatedAt              // Auto-updates when record changes
+
+  // Foreign key - which patient submitted this intake
+  patientId String
+  patient   Patient @relation(fields: [patientId], references: [id])
+
+  // Relationship - each intake can have one AI-generated summary
+  summary Summary?
+
+  // Relationship - each intake was created from one intake link
+  intakeLinkId String?     @unique
+  intakeLink   IntakeLink? @relation(fields: [intakeLinkId], references: [id])
+}
+
+// Summary model - stores the AI-generated summary from the intake
+// This is what the doctor sees on the patient detail page
+model Summary {
+  id              String   @id @default(uuid())  // Unique ID
+  chiefComplaint  String                         // Main reason patient is seeking care
+  medications     Json                           // List of current medications as JSON array
+  systemsReview   Json                           // Body systems review as JSON object
+  relevantHistory String                         // Important medical history
+  lifestyle       String                         // Lifestyle factors (diet, exercise, sleep, etc.)
+  redFlags        Json                           // Array of safety concerns/red flags
+  hasRedFlags     Boolean  @default(false)
+  redFlagCount    Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt            // Auto-updates when record changes
+
+  // Foreign key - which intake does this summary belong to
+  // @unique means one intake can only have one summary (1-to-1 relationship)
+  intakeId String @unique
+  intake   Intake @relation(fields: [intakeId], references: [id])
+}
+
+// IntakeLink model - stores the unique links sent to patients
+// When doctor clicks "Invite Patient", a new IntakeLink is created with a unique token
+// Patient uses this token in the URL to access their intake form
+model IntakeLink {
+  id        String    @id @default(uuid())  // Unique ID
+  token     String    @unique               // The unique token in the URL (e.g., /intake/abc123xyz)
+  expiresAt DateTime                        // When this link expires (e.g., 7 days from creation)
+  isUsed    Boolean   @default(false)       // Has the patient already used this link?
+  usedAt    DateTime?                       // When the patient used the link
+  createdAt DateTime  @default(now())       // When the link was created
+  updatedAt DateTime  @updatedAt            // Auto-updates when record changes
+
+  // Foreign key - which patient is this link for
+  patientId String
+  patient   Patient @relation(fields: [patientId], references: [id])
+
+  // Relationship - when patient uses this link, an Intake is created
+  intake Intake?
+}
+
+// RefreshToken model - stores refresh tokens for JWT authentication
+// When user logs in, they get an access token (short-lived) and refresh token (long-lived)
+// This table lets us invalidate/rotate refresh tokens for security
+model RefreshToken {
+  id        String   @id @default(uuid())  // Unique ID
+  token     String   @unique               // The actual refresh token string
+  expiresAt DateTime                       // When this token expires
+  isRevoked Boolean  @default(false)       // Has this token been revoked/invalidated?
+  revokedAt DateTime?                      // When it was revoked (if applicable)
+  userAgent String?                        // Browser/device info for security tracking
+  ipAddress String?                        // IP address for security tracking
+  createdAt DateTime @default(now())       // When token was created
+  updatedAt DateTime @updatedAt            // Auto-updates when record changes
+
+  // Foreign key - which user does this token belong to
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+}

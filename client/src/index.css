@@ -1,0 +1,25 @@
+@import "tailwindcss";
+
+/* colour theme for IntakeAI */
+@theme {
+  /* Sage green - main brand colour based on #1C3A33 */
+  --color-sage-50: #f2f5f4;
+  --color-sage-100: #dce5e2;
+  --color-sage-200: #b9cac5;
+  --color-sage-300: #8faba3;
+  --color-sage-400: #638a80;
+  --color-sage-500: #4a6e64;
+  --color-sage-600: #3a5850;
+  --color-sage-700: #314944;
+  --color-sage-800: #1C3A33;
+  --color-sage-900: #162e29;
+  --color-sage-950: #0d1b18;
+
+  /* Danger - for alerts and warnings labels */
+  --color-danger-50: #fef2f2;
+  --color-danger-100: #fee2e2;
+  --color-danger-200: #fecaca;
+  --color-danger-300: #fca5a5;
+  --color-danger-400: #f87171;
+  --color-danger-500: #ef4444;
+}

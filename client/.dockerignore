@@ -1,0 +1,52 @@
+# ===========================================
+# Client .dockerignore
+# Files to exclude from Docker build context
+# ===========================================
+
+# Dependencies (will be installed in container)
+node_modules
+
+# Build output (will be built in container)
+dist
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Development files
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+
+# IDE files
+.idea
+.vscode
+*.swp
+*.swo
+
+# Git
+.git
+.gitignore
+
+# Docker files (not needed inside container)
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Documentation
+README.md
+*.md
+
+# Test files
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+__tests__
+coverage
+
+# Storybook (if used)
+.storybook
+storybook-static
