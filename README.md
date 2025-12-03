@@ -15,7 +15,7 @@ AI-powered patient intake system for doctors in Ontario. IntakeAI transforms len
 
 | Layer      | Technology                               |
 | ---------- | ---------------------------------------- |
-| Frontend   | React 18, TypeScript, Vite, Tailwind CSS |
+| Frontend   | React 19, TypeScript, Vite, Tailwind CSS |
 | Backend    | Node.js, Express 5, TypeScript           |
 | Database   | PostgreSQL (Neon)                        |
 | ORM        | Prisma                                   |
@@ -113,23 +113,28 @@ docker-compose up --build
 
 | Method | Endpoint                            | Description               | Auth |
 | ------ | ----------------------------------- | ------------------------- | ---- |
+| GET    | `/api/health`                       | Health check              | No   |
 | POST   | `/api/auth/register`                | Register new account      | No   |
 | POST   | `/api/auth/login`                   | Login and get tokens      | No   |
 | POST   | `/api/auth/refresh`                 | Refresh access token      | No   |
 | POST   | `/api/auth/logout`                  | Revoke refresh token      | No   |
+| GET    | `/api/auth/me`                      | Get current user info     | Yes  |
 | GET    | `/api/patients`                     | List all patients         | Yes  |
 | POST   | `/api/patients`                     | Create a patient          | Yes  |
 | GET    | `/api/patients/:id`                 | Get patient details       | Yes  |
 | POST   | `/api/intake-links`                 | Create intake link        | Yes  |
 | GET    | `/api/public/intake/:token`         | Get intake form (patient) | No   |
 | POST   | `/api/public/intake/:token`         | Submit intake form        | No   |
+| GET    | `/api/intakes`                      | List all intakes          | Yes  |
+| GET    | `/api/intakes/:id`                  | Get intake details        | Yes  |
+| GET    | `/api/intakes/:id/summary`          | Get intake summary        | Yes  |
 | POST   | `/api/intakes/:id/generate-summary` | Generate AI summary       | Yes  |
 
 See [docs/API.md](docs/API.md) for complete API documentation.
 
 ## Screenshots
 
-in screenshot folder : C:\intakeAI\screenshots
+See the [screenshots](./screenshots) folder for UI examples.
 
 ## Environment Variables
 
